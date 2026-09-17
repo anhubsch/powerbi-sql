@@ -119,9 +119,13 @@ plausible continuation rate, not full participation.
 <summary>Hint</summary>
 
 This is the Lab 01 Part 2 Step 1 generator again, with `term_id` fixed to
-`'T4'` and `dbo.Numbers` filtered to `n <= 5000` instead of 15000. The
-`enrollment_id` sequence needs to continue past `E015000`, not restart at
-`E000001`, or the new rows collide with the primary key from Lab 01.
+`'T4'` and `dbo.Numbers` filtered to `n <= 5000`, but the `enrollment_id`
+itself has to be built from `n + 15000`, not `n` directly, or the new
+rows restart at `E000001` and collide with the primary key from Lab 01.
+`dbo.Numbers` only goes up to 15000 as built in Lab 01 Part 1 Step 3
+(`WHERE n < 15000`), so the row selection itself is still `n <= 5000`;
+it's only the `RIGHT('000000' + CAST(... AS VARCHAR(6)), 6)` argument
+that needs the offset added before formatting.
 
 </details>
 

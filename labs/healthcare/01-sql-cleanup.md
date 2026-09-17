@@ -56,7 +56,7 @@ queries instead of Excel formulas.
 
 ```mermaid
 flowchart LR
-    A[T-SQL numbers table<br/>+ CROSS JOIN generation] --> B[fact_appointments<br/>~20k synthetic rows]
+    A[T-SQL numbers table<br/>+ CROSS APPLY generation] --> B[raw_appointments<br/>~20k synthetic rows]
     C[NHS England A&E<br/>timeseries.csv] --> D[BULK INSERT]
     D --> E[stg_nhs_benchmark]
     E --> F[Validate + type]
@@ -143,8 +143,8 @@ SELECT
         DATEADD(DAY, ABS(CHECKSUM(NEWID())) % 365, '2025-01-01')
     ),
     CASE
-        WHEN ABS(CHECKSUM(NEWID())) % 100 < 12 THEN 'no-show'
-        WHEN ABS(CHECKSUM(NEWID())) % 100 < 20 THEN 'cancelled'
+        WHEN r.roll < 12 THEN 'no-show'
+        WHEN r.roll < 20 THEN 'cancelled'
         ELSE 'attended'
     END
 FROM dbo.numbers n
@@ -152,8 +152,17 @@ CROSS APPLY (
     SELECT department_name FROM dbo.department_seed
     WHERE department_id = (ABS(CHECKSUM(NEWID())) % 6) + 1
 ) d
+CROSS APPLY (SELECT ABS(CHECKSUM(NEWID())) % 100 AS roll) r
 WHERE n.n <= 20000;
 ```
+
+The status `CASE` draws its random roll once, via the `CROSS APPLY (SELECT
+ABS(CHECKSUM(NEWID())) % 100 AS roll)` above, and both `WHEN` branches test
+that same `r.roll` value. Calling `CHECKSUM(NEWID())` separately inside
+each `WHEN` would draw two independent values instead of splitting one
+roll into three ranges, and the two thresholds (12, then a further 8
+points to 20) would stop meaning "12% no-show, 8% cancelled" and
+silently produce a different, wrong distribution.
 
 `CHECKSUM(NEWID())` is this lab's stand-in for a random number generator:
 `NEWID()` produces a fresh GUID per row, `CHECKSUM()` turns it into an

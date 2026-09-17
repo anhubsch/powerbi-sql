@@ -191,24 +191,25 @@ are the expected shape here, not a sign of a broken measure.
 
 ```dax
 NHS 4-Hour Breach % =
-CALCULATE(
+1 - CALCULATE(
     AVERAGE( nhs_benchmark[pct_within_4h] ),
     ALLSELECTED( nhs_benchmark )
 )
 ```
 
-The exact column name depends on how the NHS file's percentage-within/
-over-4-hours field was labelled during Lab 01 Part 3. Adjust
-`pct_within_4h` to match what your `nhs_benchmark` table actually holds.
+`pct_within_4h`, as loaded in Lab 01 Part 3, tracks attendances seen
+*within* four hours, not the breach itself. A measure named "Breach %"
+has to invert that fraction, or it silently reports the opposite of what
+its own name claims.
 
 <details>
 <summary>Hint</summary>
 
-If the NHS file's column tracked attendances *within* four hours rather
-than *over*, this measure needs `1 - AVERAGE(...)` to represent a breach
-rate, or a rename of the measure to match what it actually calculates.
-Check which framing Lab 01 Part 3 Step 3 actually loaded before assuming
-the column name is the only thing to adjust.
+If you're adapting this pattern to a `nhs_benchmark` table where the
+column was loaded with the opposite framing (a genuine breach/over-4-hours
+percentage rather than a within-4-hours one), drop the `1 -` and average
+the column directly. Check which framing your own Lab 01 Part 3 Step 3
+actually produced before copying this measure as-is.
 
 </details>
 
@@ -326,7 +327,7 @@ Re-mark it before continuing.
   first version of the chart as if they measured the same thing, and
   described it in a report caption as "hospital performance vs. NHS
   average", which overstated what the comparison actually shows. Reworded
-  it once I reread Lab 01 Part 3 Step 4's own note about the grain and
+  it once I reread Lab 01 Part 2 Step 4's own note about the grain and
   meaning mismatch.
 - **Left the bidirectional relationship on from the Part 4 diagnostic
   step** and moved on to the next lab's setup without setting it back to

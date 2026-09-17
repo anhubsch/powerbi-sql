@@ -76,7 +76,7 @@ flowchart LR
     A[Lab 05 model<br/>fact_orders, GBP] --> H[Calculation group:<br/>Channel Scope]
     B[T-SQL generation query<br/>EUR, SYNTHETIC] --> C[stg_marketplace_orders]
     C --> D[fact_orders_marketplace]
-    E[T-SQL generation query<br/>SYNTHETIC] --> F[dim_fx_rate]
+    E[T-SQL generation query<br/>SYNTHETIC] --> F[stg_fx_rate]
     D --> F
     D --> H
     A --> H
@@ -97,16 +97,24 @@ The marketplace platform's export format, for this lab, is:
 Build this directly in SQL Server, not a download. There's no real
 second-channel export for this retailer, because the scenario itself is
 constructed for this lab. Base it on real products so it stays plausible:
-pull 200-300 distinct `StockCode` values from Lab 02's `dim_product`
-table, generate 8,000-12,000 order rows across September-December 2011
-(the marketplace channel launched partway through the year this
-retailer's direct-site data covers), with `unit_price_eur` roughly the
-GBP `UnitPrice` from `clean_orders` multiplied by a plausible EUR/GBP rate
+pull 250 distinct `StockCode` values from Lab 02's `dim_product` table,
+generate 10,000 order rows across September-December 2011 (the
+marketplace channel launched partway through the year this retailer's
+direct-site data covers), with `unit_price_eur` roughly the GBP
+`UnitPrice` from `clean_orders` multiplied by a plausible EUR/GBP rate
 plus some noise, and `status` weighted so "returned" lands somewhere close
 to the direct channel's cancellation rate rather than wildly off it. A
 brand-new channel with a wildly different return rate would be a real and
 interesting finding if it happened organically, but manufacturing that
 difference by construction would just be building in a conclusion.
+
+The query below fixes these at exactly 250 products and 10,000 rows
+(`TOP 250`, `n <= 40`) rather than leaving them as a range: a synthetic
+generator with a plainly stated random seed of "however many rows you
+feel like" is harder to debug against than one with a known, reproducible
+shape. Change the `TOP` and `n <=` values yourself if you want a
+different scale, and adjust the row-count math in the query's own comment
+to match.
 
 ```sql
 USE OnlineRetail;
@@ -384,7 +392,6 @@ calculation group named `Channel Scope`, with three calculation items:
 // Calculation item: Direct
 CALCULATE(
     SELECTEDMEASURE(),
-    REMOVEFILTERS( fact_orders_marketplace ),
     fact_orders_marketplace[StockCode] = BLANK()
 )
 ```
@@ -395,8 +402,13 @@ CALCULATE(
 The `Direct` and `Marketplace` items each need to force the base measure
 to evaluate against only one fact table's rows, without a direct
 relationship between the two fact tables to lean on. The reliable pattern
-is `CALCULATE(SELECTEDMEASURE(), <table>[somecolumn] = BLANK())`, which
-works because a base measure summing `fact_orders_marketplace` naturally
+is `CALCULATE(SELECTEDMEASURE(), <table>[somecolumn] = BLANK())` on its
+own, no `REMOVEFILTERS` needed alongside it: a row filter that keeps zero
+rows already overrides whatever filters were there before, so adding
+`REMOVEFILTERS(fact_orders_marketplace)` first doesn't change the result,
+it just reads as if two contradictory instructions were given in the same
+call. The `<table>[somecolumn] = BLANK()` filter alone is what does the
+work, because a base measure summing `fact_orders_marketplace` naturally
 returns blank once every row of that table is filtered out. The
 `Marketplace` item is the mirror image, filtering `fact_orders` down to
 nothing instead. `Combined` needs no filter argument at all: it's just

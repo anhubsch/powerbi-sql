@@ -55,7 +55,7 @@ database → tick `clean_sales` and `dim_product` → **Transform Data**.
 ### Step 2: Build fact_sales
 
 From `clean_sales`, keep: `transaction_id`, `store_id`, `store_location`,
-`product_id`, `transaction_date`, `transaction_qty`, `Revenue`. Rename the
+`product_id`, `transaction_date`, `transaction_qty`, `revenue`. Rename the
 query `fact_sales`.
 
 ### Step 3: Build dim_store
@@ -162,7 +162,7 @@ category values, not one merged row.
 ### Step 1: Total Revenue
 
 ```dax
-Total Revenue = SUM(fact_sales[Revenue])
+Total Revenue = SUM(fact_sales[revenue])
 ```
 
 ### Step 2: Category Share, the measure Lab 01 couldn't produce

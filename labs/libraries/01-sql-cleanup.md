@@ -218,6 +218,22 @@ similarly for audiobooks and video formats. None of this is a data entry
 error in the traditional sense; it's what 20 years of a library catalogue
 system exporting through different code paths looks like.
 
+Check for exact-duplicate rows, the same title/year/month combination
+counted twice by an export that ran or was appended more than once:
+
+```sql
+SELECT Title, CheckoutYear, CheckoutMonth, MaterialType, COUNT(*) AS Copies
+FROM dbo.stg_checkouts
+GROUP BY Title, CheckoutYear, CheckoutMonth, MaterialType
+HAVING COUNT(*) > 1
+ORDER BY Copies DESC;
+```
+
+**Expected result:** typically zero or a small handful of rows. Unlike the
+MaterialType casing problem, this filtered export shouldn't contain many
+true duplicates; if this query returns a large number of rows, re-check
+that the portal filter/export step didn't run twice into the same file.
+
 Check `Subjects` for blanks:
 
 ```sql
@@ -287,7 +303,7 @@ well-known, high-volume title split across two or three spelling variants.
 CREATE TABLE dbo.checkouts (
     UsageClass        NVARCHAR(50)  NOT NULL,
     CheckoutType      NVARCHAR(50)  NOT NULL,
-    MaterialType       NVARCHAR(50)  NOT NULL,
+    MaterialType      NVARCHAR(50)  NOT NULL,
     CheckoutYear       INT           NOT NULL,
     CheckoutMonth      INT           NOT NULL,
     Checkouts          INT           NOT NULL,

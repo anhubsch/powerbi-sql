@@ -40,7 +40,7 @@ anywhere in it.
 
 ```mermaid
 flowchart LR
-    A[T-SQL generation:<br/>numbers CTE, CROSS JOIN] --> B[dim_student]
+    A[T-SQL generation:<br/>numbers CTE, scalar subqueries] --> B[dim_student]
     A --> C[dim_course]
     A --> D[dim_term]
     B --> E[fact_enrollment generator]
